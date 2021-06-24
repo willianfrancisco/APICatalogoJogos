@@ -1,4 +1,6 @@
-﻿using APICatalogoJogos.InputModel;
+﻿using APICatalogoJogos.Entities;
+using APICatalogoJogos.Exceptions;
+using APICatalogoJogos.InputModel;
 using APICatalogoJogos.Repository;
 using APICatalogoJogos.ViewModel;
 using System;
@@ -18,19 +20,63 @@ namespace APICatalogoJogos.Services
             _jogoRepository = jogoRepository;
         }
 
-        public Task Atualizar(Guid id, JogoInputModel jogo)
+        public async Task Atualizar(Guid id, JogoInputModel jogo)
         {
-            throw new NotImplementedException();
+            
+            var entidadeJogo = await _jogoRepository.Obter(id);
+
+            if (entidadeJogo == null)
+            {
+                throw new JogoNaoCadastradoException();
+            }
+
+            entidadeJogo.Nome = jogo.Nome;
+            entidadeJogo.Produtora = jogo.Produtora;
+            entidadeJogo.Preco = jogo.Preco;
+
+            await _jogoRepository.Atualizar(entidadeJogo);
         }
 
-        public Task Atualizar(Guid id, double preco)
+        public async Task Atualizar(Guid id, double preco)
         {
-            throw new NotImplementedException();
+            var entidadeJogo = await _jogoRepository.Obter(id);
+
+            if (entidadeJogo == null)
+            {
+                throw new JogoNaoCadastradoException();
+            }
+
+            entidadeJogo.Preco = preco;
+
+            await _jogoRepository.Atualizar(entidadeJogo);
         }
 
-        public Task<JogoViewModel> Inserir(JogoInputModel jogo)
+        public async Task<JogoViewModel> Inserir(JogoInputModel jogo)
         {
-            throw new NotImplementedException();
+            var entidadeJogo = await _jogoRepository.Obter(jogo.Nome, jogo.Produtora);
+
+            if (entidadeJogo.Count() > 0)
+            {
+                throw new JogoJaCadastradoException();
+            }
+
+            var jogoInsert = new Jogo
+            {
+                Id = Guid.NewGuid(),
+                Nome = jogo.Nome,
+                Preco = jogo.Preco
+            };
+
+            await _jogoRepository.Inserir(jogoInsert);
+
+            return new JogoViewModel
+            {
+                Id = jogoInsert.Id,
+                Nome = jogo.Nome,
+                Produtora = jogo.Produtora,
+                Preco = jogo.Preco
+            };
+
         }
 
         public async Task<List<JogoViewModel>> Obter(int pagina, int quantidade)
@@ -46,14 +92,34 @@ namespace APICatalogoJogos.Services
             }).ToList();
         }
 
-        public Task<JogoViewModel> Obter(Guid id)
+        public async Task<JogoViewModel> Obter(Guid id)
         {
-            throw new NotImplementedException();
+            var jogo = await _jogoRepository.Obter(id);
+
+            if (jogo == null)
+            {
+                return null;
+            }
+
+            return new JogoViewModel
+            {
+                Id = jogo.Id,
+                Nome = jogo.Nome,
+                Produtora = jogo.Produtora,
+                Preco = jogo.Preco
+            };
         }
 
-        public Task Remover(Guid id)
+        public async Task Remover(Guid id)
         {
-            throw new NotImplementedException();
+            var jogo = _jogoRepository.Obter(id);
+
+            if (jogo == null)
+            {
+                throw new JogoNaoCadastradoException();
+            }
+            await _jogoRepository.Remover(id);
+
         }
 
         public void Dispose()
